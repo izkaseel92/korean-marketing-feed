@@ -5,16 +5,19 @@
 
 const admin = require('firebase-admin');
 
-// Initialize with service account from environment variable
-// Fix: GitHub Actions may mangle newlines in the private_key field
-let saRaw = process.env.FIREBASE_SERVICE_ACCOUNT;
-// Replace literal escaped newlines that got double-escaped
-saRaw = saRaw.replace(/\\n/g, '\n');
-const serviceAccount = JSON.parse(saRaw);
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  projectId: serviceAccount.project_id,
-});
+// Initialize with service account
+// Supports: GOOGLE_APPLICATION_CREDENTIALS (file path) or FIREBASE_SERVICE_ACCOUNT (JSON string)
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  admin.initializeApp({
+    credential: admin.credential.applicationDefault(),
+  });
+} else {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    projectId: serviceAccount.project_id,
+  });
+}
 
 const db = admin.firestore();
 

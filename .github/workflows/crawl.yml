@@ -36,8 +36,15 @@ jobs:
         working-directory: functions
         run: npm ci
 
+      - name: Write service account key
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa-key.json
+
       - name: Run crawlers
         working-directory: functions
         env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa-key.json
         run: node run-crawlers.js ${{ github.event.inputs.mode || 'all' }}
+
+      - name: Cleanup
+        if: always()
+        run: rm -f /tmp/sa-key.json
