@@ -37,7 +37,7 @@ jobs:
         run: npm ci
 
       - name: Write service account key
-        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa-key.json
+        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 -d > /tmp/sa-key.json
 
       - name: Run crawlers
         working-directory: functions
