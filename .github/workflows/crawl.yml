@@ -43,6 +43,7 @@ jobs:
         working-directory: functions
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa-key.json
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: node run-crawlers.js ${{ github.event.inputs.mode || 'all' }}
 
       - name: Cleanup
