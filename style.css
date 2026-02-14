@@ -1,1 +1,6 @@
-/* Add styles here */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
+@import url('./css/variables.css');
+@import url('./css/layout.css');
+@import url('./css/components.css');
+@import url('./css/animations.css');

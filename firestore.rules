@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Products collection - public read, no client write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Articles collection - public read, no client write
+    match /articles/{articleId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Subscribers collection - anyone can create, no read/update/delete from client
+    match /subscribers/{subscriberId} {
+      allow create: if request.resource.data.keys().hasAll(['email', 'createdAt'])
+                    && request.resource.data.email is string
+                    && request.resource.data.email.matches('.*@.*\\..*');
+      allow read, update, delete: if false;
+    }
+
+    // Crawl logs - no client access
+    match /crawl-logs/{logId} {
+      allow read, write: if false;
+    }
+  }
+}
