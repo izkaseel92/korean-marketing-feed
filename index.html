@@ -48,17 +48,23 @@
   <main class="main-content">
     <div class="container">
 
-      <!-- Category Filter -->
-      <div class="filter-bar">
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="services" data-i18n="tab.services">서비스</button>
+        <button class="tab-btn" data-tab="news" data-i18n="tab.news">뉴스 &amp; 트렌드</button>
+        <button class="tab-btn" data-tab="competitor" data-i18n="tab.competitor">경쟁사 동향</button>
+      </div>
+
+      <!-- Sub-filters (visible only on services tab) -->
+      <div class="filter-bar" id="subFilterBar">
         <div class="filter-pills" id="filterPills">
           <button class="filter-pill active" data-category="all" data-i18n="filter.all">전체</button>
-          <button class="filter-pill" data-category="viral" data-i18n="filter.viral">바이럴 마케팅</button>
+          <button class="filter-pill" data-category="viral" data-i18n="filter.viral">바이럴</button>
           <button class="filter-pill" data-category="review" data-i18n="filter.review">리뷰/후기</button>
           <button class="filter-pill" data-category="traffic" data-i18n="filter.traffic">트래픽/순위</button>
-          <button class="filter-pill" data-category="sns" data-i18n="filter.sns">SNS 마케팅</button>
+          <button class="filter-pill" data-category="sns" data-i18n="filter.sns">SNS</button>
           <button class="filter-pill" data-category="naver" data-i18n="filter.naver">네이버/카카오</button>
           <button class="filter-pill" data-category="ecommerce" data-i18n="filter.ecommerce">이커머스</button>
-          <button class="filter-pill" data-category="trend" data-i18n="filter.trend">트렌드</button>
         </div>
       </div>
 
@@ -68,9 +74,9 @@
         <span class="stats-updated" id="statsUpdated" data-i18n="stats.updated">방금 업데이트</span>
       </div>
 
-      <!-- Card Grid -->
-      <div class="card-grid" id="cardGrid">
-        <!-- Cards rendered by JS -->
+      <!-- Feed List -->
+      <div class="feed-list" id="feedList">
+        <!-- Items rendered by JS -->
       </div>
 
       <!-- Loading Indicator -->

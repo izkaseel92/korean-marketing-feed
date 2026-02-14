@@ -26,7 +26,7 @@ function categorize(text) {
   return 'viral';
 }
 
-async function crawl(db) {
+async function crawl(db, options = {}) {
   const results = [];
 
   try {
@@ -67,7 +67,7 @@ async function crawl(db) {
       });
     });
 
-    const saveResult = await saveProducts(db, results, SOURCE);
+    const saveResult = await saveProducts(db, results, SOURCE, options);
     await logCrawl(db, SOURCE, { status: 'success', ...saveResult });
     return saveResult;
   } catch (error) {

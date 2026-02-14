@@ -57,7 +57,7 @@ function extractPrice(priceStr) {
  * Save crawled items to Firestore with change detection
  * Only saves new or changed items
  */
-async function saveProducts(db, items, source) {
+async function saveProducts(db, items, source, { generateSummary } = {}) {
   const batch = db.batch();
   const productsRef = db.collection('products');
   let newCount = 0;
@@ -70,9 +70,13 @@ async function saveProducts(db, items, source) {
     const existing = await docRef.get();
 
     if (!existing.exists) {
-      // New product
+      // New product - generate AI summary
+      const aiSummary = generateSummary
+        ? await generateSummary(item.title || '', item.description || '')
+        : '';
       batch.set(docRef, {
         ...item,
+        aiSummary,
         source,
         isNew: true,
         crawledAt: admin.firestore.FieldValue.serverTimestamp(),

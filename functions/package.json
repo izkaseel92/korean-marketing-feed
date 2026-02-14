@@ -12,6 +12,7 @@
     "deploy": "firebase deploy --only functions"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "@google-cloud/firestore": "^8.3.0",
     "cheerio": "^1.0.0-rc.12",
     "firebase-admin": "^11.11.0",

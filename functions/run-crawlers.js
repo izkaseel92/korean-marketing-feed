@@ -32,6 +32,7 @@ const gprized = require('./crawlers/gprized');
 const iboss = require('./crawlers/iboss');
 const kmong = require('./crawlers/kmong');
 const { fetchAllFeeds } = require('./rss/rss-fetcher');
+const { generateSummary } = require('./utils/ai-summary');
 
 const MODE = process.argv[2] || 'all'; // 'crawl', 'rss', or 'all'
 
@@ -45,7 +46,7 @@ async function main() {
     for (const crawler of crawlers) {
       try {
         console.log(`[Crawler] ${crawler.SOURCE}...`);
-        const result = await crawler.crawl(db);
+        const result = await crawler.crawl(db, { generateSummary });
         console.log(`[Crawler] ${crawler.SOURCE} done:`, JSON.stringify(result));
       } catch (error) {
         console.error(`[Crawler] ${crawler.SOURCE} failed:`, error.message);
@@ -56,7 +57,7 @@ async function main() {
   if (MODE === 'rss' || MODE === 'all') {
     console.log('[Runner] Starting RSS fetch...');
     try {
-      const results = await fetchAllFeeds(db);
+      const results = await fetchAllFeeds(db, { generateSummary });
       console.log('[RSS] Done:', JSON.stringify(results));
     } catch (error) {
       console.error('[RSS] Failed:', error.message);

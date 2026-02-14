@@ -28,7 +28,7 @@ function categorize(text) {
   return 'sns'; // Kmong marketing default
 }
 
-async function crawl(db) {
+async function crawl(db, options = {}) {
   const results = [];
 
   try {
@@ -78,7 +78,7 @@ async function crawl(db) {
       await sleep(1000); // Rate limiting between pages
     }
 
-    const saveResult = await saveProducts(db, results, SOURCE);
+    const saveResult = await saveProducts(db, results, SOURCE, options);
     await logCrawl(db, SOURCE, { status: 'success', ...saveResult });
     return saveResult;
   } catch (error) {

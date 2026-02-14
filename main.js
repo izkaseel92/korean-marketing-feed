@@ -1,45 +1,51 @@
 /**
  * App bootstrap - ES Module entry point
+ * 3-tab intelligence dashboard
  */
 
 import { initI18n, onLangChange } from './js/i18n.js';
-import { fetchFeedItems, resetPagination } from './js/feed-service.js';
+import { fetchServices, fetchNews, fetchCompetitorIntel, resetPagination } from './js/feed-service.js';
 import { renderCards, renderSkeletons, clearCards } from './js/card-renderer.js';
 import { initCategoryFilter, onFilterChange, getCurrentCategory } from './js/category-filter.js';
 import { initSearch, onSearch, getCurrentQuery } from './js/search.js';
 import { initNewsletter } from './js/newsletter.js';
 
-const cardGrid = document.getElementById('cardGrid');
+const feedList = document.getElementById('feedList');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const emptyState = document.getElementById('emptyState');
 const statsCount = document.getElementById('statsCount');
 const scrollTopBtn = document.getElementById('scrollTop');
+const subFilterBar = document.getElementById('subFilterBar');
 
 let isLoading = false;
+let currentTab = 'services';
 let allItems = [];
 
-// Load and render feed
+// Map tab to fetch function
+const FETCH_FN = {
+  services:   () => fetchServices({ category: getCurrentCategory(), searchQuery: getCurrentQuery() }),
+  news:       () => fetchNews({ searchQuery: getCurrentQuery() }),
+  competitor: () => fetchCompetitorIntel({ searchQuery: getCurrentQuery() }),
+};
+
 async function loadFeed(append = false) {
   if (isLoading) return;
   isLoading = true;
 
-  const category = getCurrentCategory();
-  const searchQuery = getCurrentQuery();
-
   if (!append) {
-    clearCards(cardGrid);
-    renderSkeletons(cardGrid, 8);
-    resetPagination();
+    clearCards(feedList);
+    renderSkeletons(feedList, 6);
+    resetPagination(currentTab);
     allItems = [];
   } else {
     loadingIndicator.style.display = 'flex';
   }
 
   try {
-    const { items, hasMore } = await fetchFeedItems({ category, searchQuery });
+    const { items, hasMore } = await FETCH_FN[currentTab]();
 
     if (!append) {
-      clearCards(cardGrid);
+      clearCards(feedList);
     } else {
       loadingIndicator.style.display = 'none';
     }
@@ -50,18 +56,17 @@ async function loadFeed(append = false) {
       emptyState.style.display = 'block';
     } else {
       emptyState.style.display = 'none';
-      renderCards(cardGrid, items);
+      renderCards(feedList, items, currentTab);
     }
 
     updateStats(allItems.length);
 
-    // Set up infinite scroll if more items
     if (hasMore) {
-      observeLastCard();
+      observeLastItem();
     }
   } catch (err) {
     console.error('Failed to load feed:', err);
-    if (!append) clearCards(cardGrid);
+    if (!append) clearCards(feedList);
     emptyState.style.display = 'block';
   } finally {
     isLoading = false;
@@ -71,17 +76,35 @@ async function loadFeed(append = false) {
 
 function updateStats(count) {
   if (!statsCount) return;
-  const template = statsCount.getAttribute('data-i18n');
-  if (template) {
-    // Will be handled by i18n with {count} param
-    statsCount.textContent = statsCount.textContent.replace(/\d+/, count) || `${count}`;
-  }
-  statsCount.textContent = `${count}${document.documentElement.lang === 'ko' ? '개 피드' : document.documentElement.lang === 'zh' ? '个动态' : ' feeds'}`;
+  const lang = document.documentElement.lang;
+  if (lang === 'ko') statsCount.textContent = `${count}개 피드`;
+  else if (lang === 'zh') statsCount.textContent = `${count}个动态`;
+  else statsCount.textContent = `${count} feeds`;
+}
+
+// Tab switching
+function initTabs() {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.tab === currentTab) return;
+
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+
+      // Show sub-filters only on services tab
+      if (subFilterBar) {
+        subFilterBar.style.display = currentTab === 'services' ? '' : 'none';
+      }
+
+      loadFeed(false);
+    });
+  });
 }
 
 // Infinite scroll observer
 let observer = null;
-function observeLastCard() {
+function observeLastItem() {
   if (observer) observer.disconnect();
 
   observer = new IntersectionObserver((entries) => {
@@ -90,42 +113,35 @@ function observeLastCard() {
     }
   }, { rootMargin: '200px' });
 
-  const cards = cardGrid.querySelectorAll('.feed-card');
-  if (cards.length > 0) {
-    observer.observe(cards[cards.length - 1]);
+  const items = feedList.querySelectorAll('.feed-item');
+  if (items.length > 0) {
+    observer.observe(items[items.length - 1]);
   }
 }
 
-// Scroll to top button
 function initScrollTop() {
   if (!scrollTopBtn) return;
-
   window.addEventListener('scroll', () => {
     scrollTopBtn.classList.toggle('visible', window.scrollY > 400);
   }, { passive: true });
-
   scrollTopBtn.addEventListener('click', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
 
-// Initialize app
 async function init() {
-  // Init i18n first (loads translations)
   await initI18n();
 
-  // Init UI components
+  initTabs();
   initCategoryFilter();
   initSearch();
   initNewsletter();
   initScrollTop();
 
-  // Set up filter/search callbacks
   onFilterChange(() => loadFeed(false));
   onSearch(() => loadFeed(false));
   onLangChange(() => loadFeed(false));
 
-  // Initial load
   await loadFeed(false);
 }
 

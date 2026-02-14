@@ -40,12 +40,12 @@ const RSS_SOURCES = [
 /**
  * Fetch all RSS sources and save articles to Firestore
  */
-async function fetchAllFeeds(db) {
+async function fetchAllFeeds(db, { generateSummary } = {}) {
   const results = [];
 
   for (const source of RSS_SOURCES) {
     try {
-      const result = await fetchSingleFeed(db, source);
+      const result = await fetchSingleFeed(db, source, generateSummary);
       results.push({ source: source.name, ...result });
     } catch (error) {
       console.error(`[RSS] Error fetching ${source.name}:`, error.message);
@@ -66,7 +66,7 @@ async function fetchAllFeeds(db) {
 /**
  * Fetch a single RSS feed
  */
-async function fetchSingleFeed(db, source) {
+async function fetchSingleFeed(db, source, generateSummary) {
   const feed = await parser.parseURL(source.url);
   const articlesRef = db.collection('articles');
 
@@ -89,10 +89,14 @@ async function fetchSingleFeed(db, source) {
 
     // Extract thumbnail from content
     const thumbnailUrl = extractThumbnail(item);
+    const title = (item.title || '').slice(0, 200);
+    const description = cleanDescription(item.contentSnippet || item.content || '');
+    const aiSummary = generateSummary ? await generateSummary(title, description) : '';
 
     batch.set(docRef, {
-      title: (item.title || '').slice(0, 200),
-      description: cleanDescription(item.contentSnippet || item.content || ''),
+      title,
+      description,
+      aiSummary,
       source: source.name,
       sourceUrl: item.link || source.url,
       category: source.category,

@@ -19,7 +19,7 @@
   "newsletter.success": "Subscribed! You'll receive daily emails starting tomorrow.",
   "newsletter.error": "Subscription failed. Please try again.",
   "newsletter.duplicate": "This email is already subscribed.",
-  "footer.copyright": "\u00a9 2026 KR Marketing Feed. All rights reserved.",
+  "footer.copyright": "© 2026 KR Marketing Feed. All rights reserved.",
   "footer.disclaimer": "Product info is auto-collected and may differ from real-time data.",
   "card.viewDetail": "View Details →",
   "card.new": "NEW",
@@ -35,5 +35,10 @@
   "time.minutesAgo": "{n}m ago",
   "time.hoursAgo": "{n}h ago",
   "time.daysAgo": "{n}d ago",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "tab.services": "Services",
+  "tab.news": "News & Trends",
+  "tab.competitor": "Competitor Intel",
+  "item.aiSummary": "AI Summary",
+  "item.viewDetail": "View Detail →"
 }

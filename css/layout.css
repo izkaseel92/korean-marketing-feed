@@ -87,30 +87,56 @@ body {
   white-space: nowrap;
 }
 
-/* Card Grid */
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: var(--space-lg);
-  padding: var(--space-md) 0;
+/* Tab Bar */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: 0;
 }
 
-@media (min-width: 640px) {
-  .card-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.tab-btn {
+  padding: var(--space-sm) var(--space-lg);
+  border: none;
+  background: transparent;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: color var(--transition-fast);
+  font-family: var(--font-sans);
+  white-space: nowrap;
 }
 
-@media (min-width: 960px) {
-  .card-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.tab-btn::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-primary);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
 }
 
-@media (min-width: 1280px) {
-  .card-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+.tab-btn.active {
+  color: var(--color-primary);
+}
+
+.tab-btn.active::after {
+  opacity: 1;
+}
+
+.tab-btn:hover:not(.active) {
+  color: var(--color-text);
+}
+
+/* Feed List */
+.feed-list {
+  max-width: 860px;
+  padding: var(--space-sm) 0;
 }
 
 /* Newsletter Section */
