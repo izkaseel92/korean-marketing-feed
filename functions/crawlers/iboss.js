@@ -1,14 +1,17 @@
 /**
- * 아이보스 서비스홍보 크롤러 - i-boss.co.kr/ab-2987
- * 시행사 홍보 게시판 최신 글 크롤링
+ * 아이보스 크롤러 - i-boss.co.kr
+ * ab-2987: 서비스홍보 게시판 (competitor intel — what agencies are selling)
+ * ab-2876: 마케팅뉴스 게시판 (industry news)
  */
 
 const { fetchHtml, cleanText, saveProducts, logCrawl } = require('./base-crawler');
 
 const SOURCE = '아이보스';
 const BASE_URL = 'https://www.i-boss.co.kr';
-const LIST_URL = `${BASE_URL}/ab-2987`;
-const REQUEST_TIMEOUT = 30000;
+const BOARDS = [
+  { url: `${BASE_URL}/ab-2987`, type: 'service' },  // 서비스홍보
+  { url: `${BASE_URL}/ab-2876`, type: 'news' },     // 마케팅뉴스
+];
 
 const CATEGORY_MAP = {
   '바이럴': 'viral', '카페': 'viral', '커뮤니티': 'viral', '홍보': 'viral',
@@ -26,52 +29,62 @@ function categorize(text) {
   return 'viral';
 }
 
-async function crawl(db, options = {}) {
+const BOARD_SELECTORS = [
+  '.board-list tbody tr', '.list-table tbody tr',
+  '.bbs-list li', '.article-list li',
+  'table tbody tr', '.board_list tr',
+];
+
+async function scrapeBoard(url) {
+  const $ = await fetchHtml(url, { timeout: 30000 });
   const results = [];
 
-  try {
-    const $ = await fetchHtml(LIST_URL, { timeout: 30000 });
+  let rows = [];
+  for (const sel of BOARD_SELECTORS) {
+    const found = $(sel);
+    if (found.length > 0) { rows = found; break; }
+  }
 
-    // iBoss uses a board-style layout
-    const selectors = [
-      '.board-list tbody tr', '.list-table tbody tr',
-      '.bbs-list li', '.article-list li',
-      'table tbody tr', '.board_list tr',
-    ];
+  rows.each((_, el) => {
+    const $el = $(el);
+    const titleEl = $el.find('a[href*="ab-"], .title a, .subject a, td a').first();
+    const title = cleanText(titleEl.text());
+    const link = titleEl.attr('href') || '';
+    const date = cleanText($el.find('.date, .time, td:last-child').text());
 
-    let rows = [];
-    for (const sel of selectors) {
-      const found = $(sel);
-      if (found.length > 0) {
-        rows = found;
-        break;
-      }
-    }
+    if (!title || title.length < 5 || title.includes('공지')) return;
 
-    rows.each((_, el) => {
-      const $el = $(el);
-      const titleEl = $el.find('a[href*="ab-"], .title a, .subject a, td a').first();
-      const title = cleanText(titleEl.text());
-      const link = titleEl.attr('href') || '';
-      const date = cleanText($el.find('.date, .time, td:last-child').text());
-
-      // Skip header rows or notice rows
-      if (!title || title.length < 5 || title.includes('공지')) return;
-
-      results.push({
-        title: title.slice(0, 100),
-        description: `아이보스 서비스홍보 게시글 - ${date}`,
-        price: null,
-        category: categorize(title),
-        sourceUrl: link.startsWith('http') ? link : `${BASE_URL}${link}`,
-      });
+    results.push({
+      title: title.slice(0, 100),
+      description: `아이보스 게시글 - ${date}`,
+      price: null,
+      category: categorize(title),
+      sourceUrl: link.startsWith('http') ? link : `${BASE_URL}${link}`,
     });
+  });
 
-    const saveResult = await saveProducts(db, results, SOURCE, options);
+  return results;
+}
+
+async function crawl(db, options = {}) {
+  const allResults = [];
+
+  for (const board of BOARDS) {
+    try {
+      const items = await scrapeBoard(board.url);
+      console.log(`[${SOURCE}] ${board.type} board: ${items.length} items`);
+      allResults.push(...items);
+    } catch (err) {
+      console.error(`[${SOURCE}] ${board.type} board error:`, err.message);
+    }
+  }
+
+  try {
+    const saveResult = await saveProducts(db, allResults, SOURCE, options);
     await logCrawl(db, SOURCE, { status: 'success', ...saveResult });
     return saveResult;
   } catch (error) {
-    console.error(`[${SOURCE}] Crawl error:`, error.message);
+    console.error(`[${SOURCE}] Save error:`, error.message);
     await logCrawl(db, SOURCE, { status: 'error', error: error.message });
     return { error: error.message };
   }

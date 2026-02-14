@@ -31,6 +31,9 @@ const practicecorp = require('./crawlers/practicecorp');
 const gprized = require('./crawlers/gprized');
 const iboss = require('./crawlers/iboss');
 const kmong = require('./crawlers/kmong');
+const joymarketing = require('./crawlers/joymarketing');
+const sellclub = require('./crawlers/sellclub');
+const hismarketing = require('./crawlers/hismarketing');
 const { fetchAllFeeds } = require('./rss/rss-fetcher');
 const { generateSummary } = require('./utils/ai-summary');
 
@@ -41,7 +44,7 @@ async function main() {
 
   if (MODE === 'crawl' || MODE === 'all') {
     console.log('[Runner] Starting crawlers...');
-    const crawlers = [gpaKorea, practicecorp, gprized, iboss, kmong];
+    const crawlers = [gpaKorea, practicecorp, gprized, iboss, kmong, joymarketing, sellclub, hismarketing];
 
     for (const crawler of crawlers) {
       try {

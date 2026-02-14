@@ -13,7 +13,7 @@ const parser = new RssParser({
   },
 });
 
-// RSS source list
+// RSS source list — Korean marketing focused
 const RSS_SOURCES = [
   {
     name: '모비인사이드',
@@ -21,18 +21,18 @@ const RSS_SOURCES = [
     category: 'trend',
   },
   {
-    name: 'Platum',
-    url: 'https://platum.kr/feed',
+    name: '오픈애즈',
+    url: 'https://www.openads.co.kr/feed',
     category: 'trend',
   },
   {
-    name: 'GeekNews',
-    url: 'https://news.hada.io/rss/news',
+    name: '마케팅데일리',
+    url: 'https://www.marketingdaily.co.kr/rss/allArticle.xml',
     category: 'trend',
   },
   {
-    name: '요즘IT',
-    url: 'https://yozm.wishket.com/magazine/feed/',
+    name: '디지털인사이트',
+    url: 'https://www.ditoday.com/rss/allArticle.xml',
     category: 'trend',
   },
 ];
