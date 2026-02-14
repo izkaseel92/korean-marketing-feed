@@ -7,16 +7,21 @@ const admin = require('firebase-admin');
 
 // Initialize with service account
 // Supports: GOOGLE_APPLICATION_CREDENTIALS (file path) or FIREBASE_SERVICE_ACCOUNT (JSON string)
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-  });
-} else {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    projectId: serviceAccount.project_id,
-  });
+try {
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+    });
+  } else {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: serviceAccount.project_id,
+    });
+  }
+} catch (err) {
+  console.error('[Runner] Firebase init failed:', err.message);
+  process.exit(1);
 }
 
 const db = admin.firestore();
