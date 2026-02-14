@@ -21,11 +21,6 @@ const RSS_SOURCES = [
     category: 'trend',
   },
   {
-    name: '오픈애즈',
-    url: 'https://www.openads.co.kr/rss',
-    category: 'trend',
-  },
-  {
     name: 'Platum',
     url: 'https://platum.kr/feed',
     category: 'trend',
@@ -36,8 +31,8 @@ const RSS_SOURCES = [
     category: 'trend',
   },
   {
-    name: '브런치 마케팅',
-    url: 'https://brunch.co.kr/rss/keyword/마케팅',
+    name: '요즘IT',
+    url: 'https://yozm.wishket.com/magazine/feed/',
     category: 'trend',
   },
 ];
@@ -115,20 +110,24 @@ async function fetchSingleFeed(db, source) {
     await batch.commit();
   }
 
-  // Mark articles older than 24h as not new
-  const yesterday = new Date(Date.now() - 86400000);
-  const oldArticles = await articlesRef
-    .where('source', '==', source.name)
-    .where('isNew', '==', true)
-    .where('fetchedAt', '<', admin.firestore.Timestamp.fromDate(yesterday))
-    .get();
+  // Mark articles older than 24h as not new (best-effort, skip if index missing)
+  try {
+    const yesterday = new Date(Date.now() - 86400000);
+    const oldArticles = await articlesRef
+      .where('source', '==', source.name)
+      .where('isNew', '==', true)
+      .where('fetchedAt', '<', admin.firestore.Timestamp.fromDate(yesterday))
+      .get();
 
-  if (!oldArticles.empty) {
-    const updateBatch = db.batch();
-    oldArticles.forEach(doc => {
-      updateBatch.update(doc.ref, { isNew: false });
-    });
-    await updateBatch.commit();
+    if (!oldArticles.empty) {
+      const updateBatch = db.batch();
+      oldArticles.forEach(doc => {
+        updateBatch.update(doc.ref, { isNew: false });
+      });
+      await updateBatch.commit();
+    }
+  } catch (err) {
+    console.warn(`[RSS] Skipping isNew cleanup for ${source.name}: ${err.message}`);
   }
 
   return { status: 'success', newCount, skippedCount, totalItems: items.length };

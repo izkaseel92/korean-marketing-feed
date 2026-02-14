@@ -8,6 +8,7 @@ const { fetchHtml, cleanText, saveProducts, logCrawl } = require('./base-crawler
 const SOURCE = '아이보스';
 const BASE_URL = 'https://www.i-boss.co.kr';
 const LIST_URL = `${BASE_URL}/ab-2987`;
+const REQUEST_TIMEOUT = 30000;
 
 const CATEGORY_MAP = {
   '바이럴': 'viral', '카페': 'viral', '커뮤니티': 'viral', '홍보': 'viral',
@@ -29,7 +30,7 @@ async function crawl(db) {
   const results = [];
 
   try {
-    const $ = await fetchHtml(LIST_URL);
+    const $ = await fetchHtml(LIST_URL, { timeout: 30000 });
 
     // iBoss uses a board-style layout
     const selectors = [

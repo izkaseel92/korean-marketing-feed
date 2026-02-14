@@ -9,7 +9,7 @@ const SOURCE = '크몽';
 const BASE_URL = 'https://kmong.com';
 // Marketing category pages
 const CRAWL_URLS = [
-  `${BASE_URL}/category/500`,  // 마케팅 전체
+  `${BASE_URL}/subcat/1/500`,  // 마케팅 전체
 ];
 
 const CATEGORY_MAP = {

@@ -2,7 +2,7 @@
  * Newsletter subscription form logic
  */
 
-import { db, collection, addDoc, serverTimestamp, query, where, getDocs } from './firebase-init.js';
+import { db, collection, addDoc, serverTimestamp } from './firebase-init.js';
 import { t } from './i18n.js';
 import { showToast } from './utils.js';
 
@@ -25,27 +25,12 @@ export function initNewsletter() {
     submitBtn.innerHTML = '<span class="btn-spinner"></span>';
 
     try {
-      // Try Firestore
-      try {
-        // Check duplicate
-        const q = query(collection(db, 'subscribers'), where('email', '==', email));
-        const existing = await getDocs(q);
-
-        if (!existing.empty) {
-          showMessage(msgEl, t('newsletter.duplicate'), 'warning');
-          return;
-        }
-
-        await addDoc(collection(db, 'subscribers'), {
-          email,
-          lang: document.documentElement.lang || 'ko',
-          createdAt: serverTimestamp(),
-          active: true,
-        });
-      } catch {
-        // Firebase not configured - show success anyway for demo
-        console.log('Newsletter subscription (demo):', email);
-      }
+      await addDoc(collection(db, 'subscribers'), {
+        email,
+        lang: document.documentElement.lang || 'ko',
+        createdAt: serverTimestamp(),
+        active: true,
+      });
 
       showMessage(msgEl, t('newsletter.success'), 'success');
       showToast(t('newsletter.success'));
