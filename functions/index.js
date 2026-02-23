@@ -12,6 +12,9 @@ const db = admin.firestore();
 // Import RSS fetcher
 const { fetchAllFeeds } = require('./rss/rss-fetcher');
 
+// Import web crawler
+const { crawlOpenAds } = require('./crawlers/openads');
+
 // Import daily summary generator
 const { generateDailySummary } = require('./utils/daily-summary');
 
@@ -45,17 +48,42 @@ exports.scheduledDailySummary = functions
   });
 
 /**
- * Scheduled RSS Fetch - runs every 2 hours
- * Fetches RSS feeds for trend & insight content
+ * Scheduled Data Collection - runs every 2 hours
+ * Fetches RSS feeds + crawls OpenAds for latest marketing content
  */
 exports.scheduledRssFetch = functions
-  .runWith({ timeoutSeconds: 120, memory: '256MB' })
+  .runWith({ timeoutSeconds: 180, memory: '512MB' })
   .pubsub.schedule('every 2 hours')
   .timeZone('Asia/Seoul')
   .onRun(async () => {
-    console.log('[RSS] Starting scheduled RSS fetch...');
-    const results = await fetchAllFeeds(db);
-    console.log('[RSS] Fetch complete:', JSON.stringify(results));
+    console.log('[Scheduler] Starting scheduled data collection...');
+
+    const results = {
+      rss: null,
+      openads: null,
+    };
+
+    // RSS 피드 수집
+    try {
+      console.log('[Scheduler] Fetching RSS feeds...');
+      results.rss = await fetchAllFeeds(db);
+      console.log('[RSS] Complete:', JSON.stringify(results.rss));
+    } catch (error) {
+      console.error('[RSS] Failed:', error.message);
+      results.rss = { error: error.message };
+    }
+
+    // 오픈애즈 크롤링
+    try {
+      console.log('[Scheduler] Crawling OpenAds...');
+      results.openads = await crawlOpenAds(db);
+      console.log('[OpenAds] Complete:', JSON.stringify(results.openads));
+    } catch (error) {
+      console.error('[OpenAds] Failed:', error.message);
+      results.openads = { error: error.message };
+    }
+
+    console.log('[Scheduler] All tasks complete:', JSON.stringify(results));
     return null;
   });
 
@@ -63,8 +91,8 @@ exports.scheduledRssFetch = functions
 // See scheduledDailySummary function above
 
 /**
- * HTTP trigger - manual RSS fetch and daily summary (for testing)
- * Call: GET /api/fetch?action=rss or GET /api/fetch?action=summary
+ * HTTP trigger - manual data collection and daily summary (for testing)
+ * Call: GET /api/fetch?action=rss or ?action=openads or ?action=summary or ?action=all
  */
 exports.manualFetch = functions
   .runWith({ timeoutSeconds: 300, memory: '512MB' })
@@ -78,17 +106,26 @@ exports.manualFetch = functions
       return;
     }
 
-    const action = req.query.action || 'rss';
+    const action = req.query.action || 'all';
 
     try {
       if (action === 'rss') {
         const result = await fetchAllFeeds(db);
         res.json({ status: 'ok', action: 'rss', results: result });
+      } else if (action === 'openads') {
+        const result = await crawlOpenAds(db);
+        res.json({ status: 'ok', action: 'openads', results: result });
       } else if (action === 'summary') {
         const result = await generateDailySummary(db);
         res.json({ status: 'ok', action: 'summary', result });
+      } else if (action === 'all') {
+        const results = {
+          rss: await fetchAllFeeds(db),
+          openads: await crawlOpenAds(db),
+        };
+        res.json({ status: 'ok', action: 'all', results });
       } else {
-        res.status(400).json({ error: `Unknown action: ${action}. Use 'rss' or 'summary'` });
+        res.status(400).json({ error: `Unknown action: ${action}. Use 'rss', 'openads', 'summary', or 'all'` });
       }
     } catch (error) {
       res.status(500).json({ error: error.message });

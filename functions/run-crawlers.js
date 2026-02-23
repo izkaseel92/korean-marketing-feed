@@ -28,19 +28,37 @@ const db = admin.firestore();
 
 const { fetchAllFeeds } = require('./rss/rss-fetcher');
 const { generateSummary } = require('./utils/ai-summary');
+const { crawlOpenAds } = require('./crawlers/openads');
 
 async function main() {
-  console.log(`[Runner] Starting RSS fetch at ${new Date().toISOString()}`);
+  console.log(`[Runner] Starting data collection at ${new Date().toISOString()}`);
 
+  const results = {
+    rss: null,
+    openads: null,
+  };
+
+  // 1. RSS 피드 수집
   try {
-    const results = await fetchAllFeeds(db, { generateSummary });
-    console.log('[RSS] Fetch complete:', JSON.stringify(results));
+    console.log('[Runner] Fetching RSS feeds...');
+    results.rss = await fetchAllFeeds(db, { generateSummary });
+    console.log('[RSS] Fetch complete:', JSON.stringify(results.rss));
   } catch (error) {
     console.error('[RSS] Fetch failed:', error.message);
-    process.exit(1);
+    results.rss = { error: error.message };
   }
 
-  console.log('[Runner] Complete.');
+  // 2. 오픈애즈 크롤링
+  try {
+    console.log('[Runner] Crawling OpenAds...');
+    results.openads = await crawlOpenAds(db, { generateSummary });
+    console.log('[OpenAds] Crawl complete:', JSON.stringify(results.openads));
+  } catch (error) {
+    console.error('[OpenAds] Crawl failed:', error.message);
+    results.openads = { error: error.message };
+  }
+
+  console.log('[Runner] All tasks complete:', JSON.stringify(results, null, 2));
   process.exit(0);
 }
 
