@@ -1,6 +1,6 @@
 /**
- * Standalone crawler runner for GitHub Actions
- * Initializes Firebase Admin with service account and runs all crawlers + RSS
+ * RSS news fetcher for GitHub Actions
+ * Initializes Firebase Admin with service account and fetches RSS feeds
  */
 
 const admin = require('firebase-admin');
@@ -26,45 +26,18 @@ try {
 
 const db = admin.firestore();
 
-const gpaKorea = require('./crawlers/gpa-korea');
-const practicecorp = require('./crawlers/practicecorp');
-const gprized = require('./crawlers/gprized');
-const iboss = require('./crawlers/iboss');
-const kmong = require('./crawlers/kmong');
-const joymarketing = require('./crawlers/joymarketing');
-const sellclub = require('./crawlers/sellclub');
-const hismarketing = require('./crawlers/hismarketing');
 const { fetchAllFeeds } = require('./rss/rss-fetcher');
 const { generateSummary } = require('./utils/ai-summary');
 
-const MODE = process.argv[2] || 'all'; // 'crawl', 'rss', or 'all'
-
 async function main() {
-  console.log(`[Runner] Mode: ${MODE}, Time: ${new Date().toISOString()}`);
+  console.log(`[Runner] Starting RSS fetch at ${new Date().toISOString()}`);
 
-  if (MODE === 'crawl' || MODE === 'all') {
-    console.log('[Runner] Starting crawlers...');
-    const crawlers = [gpaKorea, practicecorp, gprized, iboss, kmong, joymarketing, sellclub, hismarketing];
-
-    for (const crawler of crawlers) {
-      try {
-        console.log(`[Crawler] ${crawler.SOURCE}...`);
-        const result = await crawler.crawl(db, { generateSummary });
-        console.log(`[Crawler] ${crawler.SOURCE} done:`, JSON.stringify(result));
-      } catch (error) {
-        console.error(`[Crawler] ${crawler.SOURCE} failed:`, error.message);
-      }
-    }
-  }
-
-  if (MODE === 'rss' || MODE === 'all') {
-    console.log('[Runner] Starting RSS fetch...');
-    try {
-      const results = await fetchAllFeeds(db, { generateSummary });
-      console.log('[RSS] Done:', JSON.stringify(results));
-    } catch (error) {
-      console.error('[RSS] Failed:', error.message);
-    }
+  try {
+    const results = await fetchAllFeeds(db, { generateSummary });
+    console.log('[RSS] Fetch complete:', JSON.stringify(results));
+  } catch (error) {
+    console.error('[RSS] Fetch failed:', error.message);
+    process.exit(1);
   }
 
   console.log('[Runner] Complete.');

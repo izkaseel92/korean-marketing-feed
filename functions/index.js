@@ -1,6 +1,6 @@
 /**
  * Cloud Functions entry point
- * Registers scheduled crawlers, RSS fetcher, and newsletter sender
+ * Registers RSS fetcher, daily summary generator, and newsletter sender
  */
 
 const functions = require('firebase-functions');
@@ -9,47 +9,39 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 const db = admin.firestore();
 
-// Import crawlers
-const gpaKorea = require('./crawlers/gpa-korea');
-const practicecorp = require('./crawlers/practicecorp');
-const gprized = require('./crawlers/gprized');
-const iboss = require('./crawlers/iboss');
-const kmong = require('./crawlers/kmong');
-
 // Import RSS fetcher
 const { fetchAllFeeds } = require('./rss/rss-fetcher');
 
+// Import daily summary generator
+const { generateDailySummary } = require('./utils/daily-summary');
+
 // Import newsletter
-const { sendDailyDigest } = require('./newsletter/send-digest');
+const { sendDailyDigest } = require('./newsletter/send-daily-digest');
 
 /**
- * Scheduled Crawler - runs every 6 hours
- * Crawls all marketing agency sites
+ * Scheduled Daily Summary - runs every day at 12:00 AM UTC (9:00 AM KST)
+ * Generates executive summary of last 24 hours of news
  */
-exports.scheduledCrawl = functions
-  .runWith({ timeoutSeconds: 300, memory: '512MB' })
-  .pubsub.schedule('every 6 hours')
+exports.scheduledDailySummary = functions
+  .runWith({ timeoutSeconds: 120, memory: '256MB' })
+  .pubsub.schedule('0 0 * * *')
   .timeZone('Asia/Seoul')
   .onRun(async () => {
-    console.log('[Crawler] Starting scheduled crawl...');
+    console.log('[Daily Summary] Starting daily summary generation...');
 
-    const crawlers = [gpaKorea, practicecorp, gprized, iboss, kmong];
-    const results = [];
+    try {
+      const summaryResult = await generateDailySummary(db);
+      console.log('[Daily Summary] Generated:', JSON.stringify(summaryResult));
 
-    for (const crawler of crawlers) {
-      try {
-        console.log(`[Crawler] Crawling ${crawler.SOURCE}...`);
-        const result = await crawler.crawl(db);
-        results.push({ source: crawler.SOURCE, ...result });
-        console.log(`[Crawler] ${crawler.SOURCE} done:`, result);
-      } catch (error) {
-        console.error(`[Crawler] ${crawler.SOURCE} failed:`, error.message);
-        results.push({ source: crawler.SOURCE, error: error.message });
-      }
+      // Send newsletter with the generated summary
+      const emailResult = await sendDailyDigest(db, summaryResult);
+      console.log('[Newsletter] Sent:', JSON.stringify(emailResult));
+
+      return null;
+    } catch (error) {
+      console.error('[Daily Summary] Failed:', error.message);
+      throw error;
     }
-
-    console.log('[Crawler] All crawls complete:', JSON.stringify(results));
-    return null;
   });
 
 /**
@@ -67,27 +59,14 @@ exports.scheduledRssFetch = functions
     return null;
   });
 
-/**
- * Scheduled Newsletter - runs daily at 9AM KST
- * Sends digest email to all subscribers
- */
-exports.scheduledNewsletter = functions
-  .runWith({ timeoutSeconds: 120, memory: '256MB' })
-  .pubsub.schedule('0 9 * * *')
-  .timeZone('Asia/Seoul')
-  .onRun(async () => {
-    console.log('[Newsletter] Starting daily digest...');
-    const sendgridKey = functions.config().sendgrid?.key || '';
-    const result = await sendDailyDigest(db, sendgridKey);
-    console.log('[Newsletter] Digest sent:', JSON.stringify(result));
-    return null;
-  });
+// Newsletter sending is now integrated with Daily Summary generation
+// See scheduledDailySummary function above
 
 /**
- * HTTP trigger - manual crawl (for testing)
- * Call: GET /api/crawl?source=all
+ * HTTP trigger - manual RSS fetch and daily summary (for testing)
+ * Call: GET /api/fetch?action=rss or GET /api/fetch?action=summary
  */
-exports.manualCrawl = functions
+exports.manualFetch = functions
   .runWith({ timeoutSeconds: 300, memory: '512MB' })
   .https.onRequest(async (req, res) => {
     // Simple auth check - use a secret token in production
@@ -99,36 +78,19 @@ exports.manualCrawl = functions
       return;
     }
 
-    const source = req.query.source || 'all';
-    const results = [];
+    const action = req.query.action || 'rss';
 
-    const crawlerMap = {
-      'gpa-korea': gpaKorea,
-      'practicecorp': practicecorp,
-      'gprized': gprized,
-      'iboss': iboss,
-      'kmong': kmong,
-    };
-
-    if (source === 'all') {
-      for (const crawler of Object.values(crawlerMap)) {
-        try {
-          const result = await crawler.crawl(db);
-          results.push({ source: crawler.SOURCE, ...result });
-        } catch (error) {
-          results.push({ source: crawler.SOURCE, error: error.message });
-        }
+    try {
+      if (action === 'rss') {
+        const result = await fetchAllFeeds(db);
+        res.json({ status: 'ok', action: 'rss', results: result });
+      } else if (action === 'summary') {
+        const result = await generateDailySummary(db);
+        res.json({ status: 'ok', action: 'summary', result });
+      } else {
+        res.status(400).json({ error: `Unknown action: ${action}. Use 'rss' or 'summary'` });
       }
-    } else if (source === 'rss') {
-      const result = await fetchAllFeeds(db);
-      results.push(...result);
-    } else if (crawlerMap[source]) {
-      const result = await crawlerMap[source].crawl(db);
-      results.push({ source: crawlerMap[source].SOURCE, ...result });
-    } else {
-      res.status(400).json({ error: `Unknown source: ${source}` });
-      return;
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
-
-    res.json({ status: 'ok', results });
   });

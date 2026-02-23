@@ -1,14 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Products collection - public read, no client write
-    match /products/{productId} {
+    // Articles collection - public read, no client write
+    match /articles/{articleId} {
       allow read: if true;
       allow write: if false;
     }
 
-    // Articles collection - public read, no client write
-    match /articles/{articleId} {
+    // Daily summaries collection - public read, no client write (Cloud Function only)
+    match /daily-summaries/{summaryId} {
       allow read: if true;
       allow write: if false;
     }
@@ -21,7 +21,12 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
-    // Crawl logs - no client access
+    // Legacy collections (kept for reference, can be removed after data migration)
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /crawl-logs/{logId} {
       allow read, write: if false;
     }

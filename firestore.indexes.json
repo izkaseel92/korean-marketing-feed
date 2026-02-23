@@ -1,36 +1,17 @@
 {
   "indexes": [
     {
-      "collectionGroup": "products",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "category", "order": "ASCENDING" },
-        { "fieldPath": "crawledAt", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "products",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "source", "order": "ASCENDING" },
-        { "fieldPath": "crawledAt", "order": "DESCENDING" }
-      ]
-    },
-    {
       "collectionGroup": "articles",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "category", "order": "ASCENDING" },
-        { "fieldPath": "publishedAt", "order": "DESCENDING" }
+        { "fieldPath": "fetchedAt", "order": "DESCENDING" }
       ]
     },
     {
-      "collectionGroup": "articles",
+      "collectionGroup": "daily-summaries",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "isNew", "order": "ASCENDING" },
-        { "fieldPath": "source", "order": "ASCENDING" },
-        { "fieldPath": "fetchedAt", "order": "ASCENDING" }
+        { "fieldPath": "date", "order": "DESCENDING" }
       ]
     }
   ],

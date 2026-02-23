@@ -1,32 +1,22 @@
 /**
  * App bootstrap - ES Module entry point
- * 3-tab intelligence dashboard
+ * Korean Marketing & E-commerce News Dashboard
  */
 
-import { initI18n, onLangChange } from './js/i18n.js';
-import { fetchServices, fetchNews, fetchCompetitorIntel, resetPagination } from './js/feed-service.js';
+import { fetchArticles, resetPagination } from './js/feed-service.js';
 import { renderCards, renderSkeletons, clearCards } from './js/card-renderer.js';
-import { initCategoryFilter, onFilterChange, getCurrentCategory } from './js/category-filter.js';
 import { initSearch, onSearch, getCurrentQuery } from './js/search.js';
 import { initNewsletter } from './js/newsletter.js';
+import { initDailySummary } from './js/daily-summary.js';
 
 const feedList = document.getElementById('feedList');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const emptyState = document.getElementById('emptyState');
 const statsCount = document.getElementById('statsCount');
 const scrollTopBtn = document.getElementById('scrollTop');
-const subFilterBar = document.getElementById('subFilterBar');
 
 let isLoading = false;
-let currentTab = 'services';
 let allItems = [];
-
-// Map tab to fetch function
-const FETCH_FN = {
-  services:   () => fetchServices({ category: getCurrentCategory(), searchQuery: getCurrentQuery() }),
-  news:       () => fetchNews({ searchQuery: getCurrentQuery() }),
-  competitor: () => fetchCompetitorIntel({ searchQuery: getCurrentQuery() }),
-};
 
 async function loadFeed(append = false) {
   if (isLoading) return;
@@ -35,14 +25,14 @@ async function loadFeed(append = false) {
   if (!append) {
     clearCards(feedList);
     renderSkeletons(feedList, 6);
-    resetPagination(currentTab);
+    resetPagination();
     allItems = [];
   } else {
     loadingIndicator.style.display = 'flex';
   }
 
   try {
-    const { items, hasMore } = await FETCH_FN[currentTab]();
+    const { items, hasMore } = await fetchArticles({ searchQuery: getCurrentQuery() });
 
     if (!append) {
       clearCards(feedList);
@@ -56,7 +46,7 @@ async function loadFeed(append = false) {
       emptyState.style.display = 'block';
     } else {
       emptyState.style.display = 'none';
-      renderCards(feedList, items, currentTab);
+      renderCards(feedList, items);
     }
 
     updateStats(allItems.length);
@@ -76,31 +66,10 @@ async function loadFeed(append = false) {
 
 function updateStats(count) {
   if (!statsCount) return;
-  const lang = document.documentElement.lang;
-  if (lang === 'ko') statsCount.textContent = `${count}개 피드`;
-  else if (lang === 'zh') statsCount.textContent = `${count}个动态`;
-  else statsCount.textContent = `${count} feeds`;
+  statsCount.textContent = `${count}개 뉴스`;
 }
 
-// Tab switching
-function initTabs() {
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (btn.dataset.tab === currentTab) return;
-
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentTab = btn.dataset.tab;
-
-      // Show sub-filters only on services tab
-      if (subFilterBar) {
-        subFilterBar.style.display = currentTab === 'services' ? '' : 'none';
-      }
-
-      loadFeed(false);
-    });
-  });
-}
+// Tabs removed - single feed only
 
 // Infinite scroll observer
 let observer = null;
@@ -130,17 +99,12 @@ function initScrollTop() {
 }
 
 async function init() {
-  await initI18n();
-
-  initTabs();
-  initCategoryFilter();
   initSearch();
   initNewsletter();
   initScrollTop();
+  await initDailySummary();
 
-  onFilterChange(() => loadFeed(false));
   onSearch(() => loadFeed(false));
-  onLangChange(() => loadFeed(false));
 
   await loadFeed(false);
 }

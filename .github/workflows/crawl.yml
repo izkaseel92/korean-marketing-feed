@@ -1,23 +1,13 @@
-name: Crawl & RSS Feed
+name: Fetch News RSS
 
 on:
   schedule:
-    # Run crawlers every 6 hours
-    - cron: '0 */6 * * *'
+    # Fetch RSS feeds every 2 hours
+    - cron: '0 */2 * * *'
   workflow_dispatch:
-    inputs:
-      mode:
-        description: 'Run mode'
-        required: false
-        default: 'all'
-        type: choice
-        options:
-          - all
-          - crawl
-          - rss
 
 jobs:
-  crawl:
+  fetch-rss:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -39,12 +29,12 @@ jobs:
       - name: Write service account key
         run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" | base64 -d > /tmp/sa-key.json
 
-      - name: Run crawlers
+      - name: Fetch RSS feeds
         working-directory: functions
         env:
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa-key.json
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node run-crawlers.js ${{ github.event.inputs.mode || 'all' }}
+        run: node run-crawlers.js
 
       - name: Cleanup
         if: always()
